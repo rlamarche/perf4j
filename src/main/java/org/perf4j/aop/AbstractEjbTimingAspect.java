@@ -1,10 +1,11 @@
 package org.perf4j.aop;
 
-import org.perf4j.LoggingStopWatch;
+import java.lang.reflect.Method;
 
 import javax.interceptor.AroundInvoke;
 import javax.interceptor.InvocationContext;
-import java.lang.reflect.Method;
+
+import org.perf4j.LoggingStopWatch;
 
 /**
  * This is the base class for TimingAspects that use the EJB interceptor framework.
@@ -14,6 +15,7 @@ import java.lang.reflect.Method;
  * @author Alex Devine
  */
 public abstract class AbstractEjbTimingAspect extends AgnosticTimingAspect {
+
     /**
      * This is the interceptor that runs the target method, surrounding it with stop watch start and stop calls.
      *
@@ -26,9 +28,7 @@ public abstract class AbstractEjbTimingAspect extends AgnosticTimingAspect {
         final Method executingMethod = ctx.getMethod();
 
         //need to get the Profiled annotation off the method, otherwise use a default
-        Profiled profiled = (executingMethod == null) ?
-                            DefaultProfiled.INSTANCE :
-                            ctx.getMethod().getAnnotation(Profiled.class);
+        Profiled profiled = getProfiled(ctx);
         if (profiled == null) {
             profiled = DefaultProfiled.INSTANCE;
         }
@@ -77,4 +77,16 @@ public abstract class AbstractEjbTimingAspect extends AgnosticTimingAspect {
      * @return The new LoggingStopWatch.
      */
     protected abstract LoggingStopWatch newStopWatch(String loggerName, String levelName);
+
+	/**
+	 * Get the Profiled implementation.
+     * @param ctx The InvocationContext will be passed in by the Java EE server.
+	 * @return The Profiled annotation off the method, otherwise use a default
+	 */
+	protected Profiled getProfiled(final InvocationContext ctx) {
+		 final Method executingMethod = ctx.getMethod();
+		return (executingMethod == null) ?
+                            DefaultProfiled.INSTANCE :
+                            ctx.getMethod().getAnnotation(Profiled.class);
+	}
 }

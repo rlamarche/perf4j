@@ -1,13 +1,13 @@
 package org.perf4j.aop;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.apache.commons.jexl.Expression;
 import org.apache.commons.jexl.ExpressionFactory;
 import org.apache.commons.jexl.JexlContext;
 import org.apache.commons.jexl.context.HashMapContext;
 import org.perf4j.LoggingStopWatch;
-
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * This AgnosticTimingAspect class contains all the logic for executing a profiled method with appropriate timing calls,
