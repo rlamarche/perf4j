@@ -92,7 +92,7 @@ public class AgnosticTimingAspect {
                                joinPoint.getExecutingObject(),
                                joinPoint.getDeclaringClass(),
                                returnValue,
-                               exceptionThrown);
+                               exceptionThrown, joinPoint.getAdditionnalVars());
         } else {
             tag = profiled.tag();
         }
@@ -123,7 +123,7 @@ public class AgnosticTimingAspect {
                                    joinPoint.getExecutingObject(),
                                    joinPoint.getDeclaringClass(),
                                    returnValue,
-                                   exceptionThrown);
+                                   exceptionThrown, joinPoint.getAdditionnalVars());
             if ("".equals(message)) {
                 message = null;
             }
@@ -137,27 +137,29 @@ public class AgnosticTimingAspect {
      * Helper method is used to parse out {expressionLanguage} elements from the text and evaluate the strings using
      * JEXL.
      *
-     * @param text            The text to be parsed.
-     * @param methodName      The name of the method that was annotated.
-     * @param args            The args that were passed to the method to be profiled.
-     * @param annotatedObject The value of the object whose method was profiled. Will be null if a class method was
-     *                        profiled.
-     * @param annotatedClass  The declaring class of the method that was annotated.
-     * @param returnValue     The value returned from the execution of the profiled method, or null if the method
-     *                        returned void or an exception was thrown.
-     * @param exceptionThrown The exception thrown, if any, by the profiled method. Will be null if the method
-     *                        completed normally.
-     * @return The evaluated string.
+     *
+	 * @param text            The text to be parsed.
+	 * @param methodName      The name of the method that was annotated.
+	 * @param args            The args that were passed to the method to be profiled.
+	 * @param annotatedObject The value of the object whose method was profiled. Will be null if a class method was
+	 *                        profiled.
+	 * @param annotatedClass  The declaring class of the method that was annotated.
+	 * @param returnValue     The value returned from the execution of the profiled method, or null if the method
+	 *                        returned void or an exception was thrown.
+	 * @param exceptionThrown The exception thrown, if any, by the profiled method. Will be null if the method
+	 *                        completed normally.
+	 * @param additionnalVars
+	 * @return The evaluated string.
      * @see Profiled#el()
      */
     @SuppressWarnings("unchecked")
 	protected String evaluateJexl(String text,
-	                              String methodName,
-                                  Object[] args,
-                                  Object annotatedObject,
-                                  Class<?> annotatedClass,
-                                  Object returnValue,
-                                  Throwable exceptionThrown) {
+								  String methodName,
+								  Object[] args,
+								  Object annotatedObject,
+								  Class<?> annotatedClass,
+								  Object returnValue,
+								  Throwable exceptionThrown, Map<String, Object> additionnalVars) {
         StringBuilder retVal = new StringBuilder(text.length());
 
         //create a JexlContext to be used in all evaluations
@@ -170,6 +172,12 @@ public class AgnosticTimingAspect {
         jexlContext.getVars().put("$class", annotatedClass);
         jexlContext.getVars().put("$return", returnValue);
         jexlContext.getVars().put("$exception", exceptionThrown);
+
+		if (additionnalVars != null) {
+			for (Map.Entry<String, Object> entry : additionnalVars.entrySet()) {
+				jexlContext.getVars().put(entry.getKey(), entry.getValue());
+			}
+		}
 
         // look for {expression} in the passed in text
         int bracketIndex;

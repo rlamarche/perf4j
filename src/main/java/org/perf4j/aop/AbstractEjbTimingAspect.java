@@ -5,6 +5,9 @@ import org.perf4j.LoggingStopWatch;
 import javax.interceptor.AroundInvoke;
 import javax.interceptor.InvocationContext;
 import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * This is the base class for TimingAspects that use the EJB interceptor framework.
@@ -14,6 +17,18 @@ import java.lang.reflect.Method;
  * @author Alex Devine
  */
 public abstract class AbstractEjbTimingAspect extends AgnosticTimingAspect {
+
+	/**
+	 * This ThreadLocal is used to keep the depth of call
+	 */
+	private static final ThreadLocal<AtomicLong> TL_DEEP = new ThreadLocal<AtomicLong>() {
+		@Override
+		protected AtomicLong initialValue() {
+			return new AtomicLong();
+		};
+	};
+	
+
     /**
      * This is the interceptor that runs the target method, surrounding it with stop watch start and stop calls.
      *
@@ -23,6 +38,7 @@ public abstract class AbstractEjbTimingAspect extends AgnosticTimingAspect {
      */
     @AroundInvoke
     public Object doPerfLogging(final InvocationContext ctx) throws Exception {
+		long depth = TL_DEEP.get().incrementAndGet();
         final Method executingMethod = ctx.getMethod();
 
         //need to get the Profiled annotation off the method, otherwise use a default
@@ -35,6 +51,12 @@ public abstract class AbstractEjbTimingAspect extends AgnosticTimingAspect {
 
         //note - the EJB 3.0 Interceptor spec requires that we only throw Exception, NOT throwable, but
         //runProfiledMethod throws Throwable.
+		
+		final Map<String, Object> additionnalVars = new HashMap<String, Object>();
+		additionnalVars.put("$depth", depth);
+		additionnalVars.put("$threadName", Thread.currentThread().getName());
+		additionnalVars.put("$threadId", Thread.currentThread().getId());
+
         try {
             return runProfiledMethod(
                     new AbstractJoinPoint() {
@@ -49,7 +71,11 @@ public abstract class AbstractEjbTimingAspect extends AgnosticTimingAspect {
                         }
                         
                         public Class<?> getDeclaringClass() { return (executingMethod == null) ? null : executingMethod.getDeclaringClass() ; }
-                    },
+
+						public Map<String, Object> getAdditionnalVars() {
+							return additionnalVars;
+						}
+					},
                     profiled,
                     newStopWatch(profiled.logger(), profiled.level())
             );
@@ -65,7 +91,9 @@ public abstract class AbstractEjbTimingAspect extends AgnosticTimingAspect {
             //The best we can do here is wrap the Throwable as a RuntimeException, even though this could potentially
             //change the semantics from the callers point of view.
             throw new RuntimeException(t);
-        }
+        } finally {
+			TL_DEEP.get().decrementAndGet();
+		}
     }
 
     /**

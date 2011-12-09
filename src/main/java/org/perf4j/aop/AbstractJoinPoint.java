@@ -1,5 +1,7 @@
 package org.perf4j.aop;
 
+import java.util.Map;
+
 /**
  * AOP-framework agnostic join point.
  *
@@ -48,4 +50,10 @@ public interface AbstractJoinPoint {
      * @return the declaring class of the method that was annotated
      */
     public Class<?> getDeclaringClass();
+
+	/**
+	 * Return additionnal vars
+	 * @return
+	 */
+	public Map<String, Object> getAdditionnalVars();
 }

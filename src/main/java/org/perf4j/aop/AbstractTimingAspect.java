@@ -20,6 +20,9 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.perf4j.LoggingStopWatch;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * This is the base class for TimingAspects that use the AspectJ framework (a better name for this class work probably
  * be AspectJTimingAspect, but for backwards compatibility reasons it keeps the AbstractTimingAspect name).
@@ -53,7 +56,11 @@ public abstract class AbstractTimingAspect extends AgnosticTimingAspect {
                     public String getMethodName() { return pjp.getSignature().getName(); }
                     
                     public Class<?> getDeclaringClass() { return pjp.getSignature().getDeclaringType(); }
-                },
+
+					public Map<String, Object> getAdditionnalVars() {
+						return new HashMap<String, Object>();
+					}
+				},
                 profiled,
                 newStopWatch(profiled.logger() + "", profiled.level())
         );
